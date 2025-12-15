@@ -11,7 +11,7 @@ namespace Microsoft.SCIM
     using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
-    using System.Web.Http;
+    using HttpResponseException = System.Web.Http.HttpResponseException;
 
     [Route(ServiceConstants.RouteBulk)]
     [Authorize]

@@ -8,9 +8,9 @@ namespace Microsoft.SCIM
     using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
-    using System.Web.Http;
+    using Microsoft.AspNetCore.Http.Extensions;
     using Microsoft.AspNetCore.Mvc;
-    using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
+    using HttpResponseException = System.Web.Http.HttpResponseException;
 
     public abstract class ControllerTemplate : ControllerBase
     {
@@ -53,8 +53,18 @@ namespace Microsoft.SCIM
 
         protected HttpRequestMessage ConvertRequest()
         {
-            HttpRequestMessageFeature hreqmf = new HttpRequestMessageFeature(this.HttpContext);
-            HttpRequestMessage result = hreqmf.HttpRequestMessage;
+            var request = this.HttpContext.Request;
+            var result = new HttpRequestMessage(new HttpMethod(request.Method), request.GetDisplayUrl());
+            
+            // Copy headers
+            foreach (var header in request.Headers)
+            {
+                if (!result.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()))
+                {
+                    result.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
+                }
+            }
+            
             return result;
         }
 
@@ -284,7 +294,7 @@ namespace Microsoft.SCIM
 
         [HttpGet(ControllerTemplate.AttributeValueIdentifier)]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "Get", Justification = "The names of the methods of a controller must correspond to the names of hypertext markup verbs")]
-        public virtual async Task<IActionResult> Get([FromUri]string identifier)
+        public virtual async Task<IActionResult> Get(string identifier)
         {
             string correlationIdentifier = null;
             try
